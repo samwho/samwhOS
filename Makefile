@@ -5,7 +5,7 @@ build: target/kernel.bin
 .PHONY: default build run clean
 
 cargo:
-	xargo build --release --target x86_64-unknown-intermezzos-gnu
+	xargo build --release --target x86_64-unknown-samwhos-gnu
 
 target/multiboot_header.o: src/asm/multiboot_header.asm
 	mkdir -p target
@@ -16,7 +16,7 @@ target/boot.o: src/asm/boot.asm
 	nasm -f elf64 src/asm/boot.asm -o target/boot.o
 
 target/kernel.bin: target/multiboot_header.o target/boot.o src/asm/linker.ld cargo
-	ld -n -o target/kernel.bin -T src/asm/linker.ld target/multiboot_header.o target/boot.o target/x86_64-unknown-intermezzos-gnu/release/libintermezzos.a
+	ld -n -o target/kernel.bin -T src/asm/linker.ld target/multiboot_header.o target/boot.o target/x86_64-unknown-samwhos-gnu/release/libsamwhos.a
 
 target/os.iso: target/kernel.bin src/asm/grub.cfg
 	mkdir -p target/isofiles/boot/grub
