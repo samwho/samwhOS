@@ -1,7 +1,10 @@
 #![feature(lang_items)]
+#![feature(asm)]
+
 #![no_std]
 
 mod screen;
+mod asm;
 
 #[lang = "eh_personality"]
 extern fn eh_personality() {
@@ -14,7 +17,7 @@ extern fn rust_begin_panic() -> ! {
 
 #[no_mangle]
 pub extern fn kmain() -> ! {
-    screen::clear();
+    screen::init();
     screen::puts("Hello, world!\n");
     screen::puts("How goes?\n");
 
