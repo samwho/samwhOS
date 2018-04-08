@@ -2,7 +2,7 @@ default: build
 
 build: target/kernel.bin
 
-.PHONY: default build run clean
+.PHONY: default build run clean gdb
 
 cargo:
 	xargo build --release --target x86_64-unknown-samwhos-gnu
@@ -26,6 +26,11 @@ target/os.iso: target/kernel.bin src/asm/grub.cfg
 
 run: target/os.iso
 	qemu-system-x86_64 -cdrom target/os.iso
+
+gdb: target/os.iso
+	qemu-system-x86_64 -cdrom target/os.iso -S -s &
+	sleep 2
+	gdb -iex "target remote localhost:1234"
 
 clean: 
 	cargo clean

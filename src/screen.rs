@@ -1,8 +1,9 @@
 use asm;
+use math;
 
 const VGA_PTR: usize = 0xb8000;
 const CHARS_PER_LINE: u8 = 80;
-const NUM_LINES: u8 = 15;
+const NUM_LINES: u8 = 25;
 
 static mut CURSOR: (u8, u8) = (0, 0);
 
@@ -26,7 +27,6 @@ pub fn puts(s: &str) {
     for c in s.chars() {
         putc(c)
     }
-    update_cursor();
 }
 
 pub fn puti(i: u32) { 
@@ -45,14 +45,14 @@ pub fn puti(i: u32) {
 pub fn putc(c: char) {
     if c == '\n' {
         new_line();
-        return;
+    } else {
+        unsafe {
+            *screen_ptr(CURSOR.0, CURSOR.1) = c as u8;
+        }
+        advance_cursor();
     }
 
-    unsafe {
-        *screen_ptr(CURSOR.0, CURSOR.1) = c as u8;
-    }
-
-    advance_cursor()
+    update_cursor();
 }
 
 pub fn putb(b: u8) {
@@ -61,17 +61,16 @@ pub fn putb(b: u8) {
 
 fn advance_cursor() {
     unsafe {
-        if CURSOR.0 == CHARS_PER_LINE {
+        CURSOR = (CURSOR.0 + 1, CURSOR.1);
+        if CURSOR.0 > CHARS_PER_LINE {
             new_line()
-        } else {
-            CURSOR = (CURSOR.0 + 1, CURSOR.1);
         }
     }
 }
 
-fn new_line() {
+pub fn new_line() {
     unsafe {
-        CURSOR = (0, CURSOR.1 + 1);
+        CURSOR = (0, math::min(CURSOR.1 + 1, NUM_LINES));
         if CURSOR.1 == NUM_LINES {
             scroll_up();
         }
@@ -99,8 +98,23 @@ fn blank_line(line: u8) {
 }
 
 fn screen_ptr(x: u8, y: u8) -> *mut u8 {
-    let offset: usize = ((y * CHARS_PER_LINE) + x) as usize;
-    (VGA_PTR + (offset * 2)) as *mut u8
+    (VGA_PTR + (screen_offset_no_overflow(x, y) * 2)) as *mut u8
+}
+
+/// Calculates the offset into the screen buffer, casting arguments
+/// to larger integers before doing so. In a previous incarnation
+/// of this code we didn't do this, and ended up triggering an
+/// integer overflow and writing to random parts of the screen.
+///
+/// "But Sam, doesn't Rust do nifty overflow checking for you?"
+///
+/// We are compiling in release mode, and release mode removes
+/// those checks. We can't compile in debug mode, because that
+/// appears to rely on libc.
+fn screen_offset_no_overflow(x: u8, y: u8) -> usize {
+    let wide_y: usize = y as usize;
+    let wide_x: usize = x as usize;
+    ((wide_y * (CHARS_PER_LINE as usize)) + wide_x) as usize
 }
 
 fn enable_cursor(start: u8, end: u8) {
@@ -115,7 +129,7 @@ fn enable_cursor(start: u8, end: u8) {
 
 fn update_cursor() {
     unsafe {
-        let pos = (CURSOR.1 * CHARS_PER_LINE + CURSOR.0) as u16;
+        let pos = screen_offset_no_overflow(CURSOR.0, CURSOR.1) as u16;
 
         asm::outb(0x3D4, 0x0F);
         asm::outb(0x3D5, (pos & 0xFF) as u8);
