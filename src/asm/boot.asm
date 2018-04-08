@@ -1,4 +1,5 @@
 extern kmain
+extern header_start
 global start
 
 section .text
@@ -58,6 +59,7 @@ start:
 	mov es, ax
 
 	; jump to Rust!
+	push header_start
 	jmp gdt64.code:kmain
 
 section .bss

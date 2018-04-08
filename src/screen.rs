@@ -17,6 +17,11 @@ pub fn clear() {
     }
 }
 
+pub fn println(s: &str) {
+    puts(s);
+    putc('\n');
+}
+
 pub fn puts(s: &str) {
     for c in s.chars() {
         putc(c)
@@ -24,7 +29,20 @@ pub fn puts(s: &str) {
     update_cursor();
 }
 
-fn putc(c: char) {
+pub fn puti(i: u32) { 
+    let chars = "0123456789ABCDEF".as_bytes();
+    puts("0x");
+    putb(chars[((i >> 28) & 0xF) as usize]);
+    putb(chars[((i >> 24) & 0xF) as usize]);
+    putb(chars[((i >> 20) & 0xF) as usize]);
+    putb(chars[((i >> 16) & 0xF) as usize]);
+    putb(chars[((i >> 12) & 0xF) as usize]);
+    putb(chars[((i >> 8)  & 0xF) as usize]);
+    putb(chars[((i >> 4)  & 0xF) as usize]);
+    putb(chars[( i        & 0xF) as usize]);
+}
+
+pub fn putc(c: char) {
     if c == '\n' {
         new_line();
         return;
@@ -35,6 +53,10 @@ fn putc(c: char) {
     }
 
     advance_cursor()
+}
+
+pub fn putb(b: u8) {
+    putc(b as char);
 }
 
 fn advance_cursor() {
